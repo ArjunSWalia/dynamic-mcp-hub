@@ -1,0 +1,199 @@
+openapi: "3.0.3"
+info:
+  title: HTTPBin API
+  description: A simple HTTP Request & Response Service (subset for demo)
+  version: "1.0.0"
+servers:
+  - url: https://httpbin.org
+
+paths:
+  /get:
+    get:
+      operationId: httpbin_get
+      summary: Returns GET data
+      description: Returns the GET request's query parameters, headers, and origin
+      parameters:
+        - name: foo
+          in: query
+          description: Example query parameter
+          schema:
+            type: string
+        - name: bar
+          in: query
+          description: Another example query parameter
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /post:
+    post:
+      operationId: httpbin_post
+      summary: Returns POST data
+      description: Returns the POST request's data, including JSON body if provided
+      requestBody:
+        description: JSON body to echo back
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /headers:
+    get:
+      operationId: httpbin_headers
+      summary: Returns request headers
+      description: Returns the request headers as a JSON object
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /ip:
+    get:
+      operationId: httpbin_ip
+      summary: Returns origin IP
+      description: Returns the requester's origin IP address
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  origin:
+                    type: string
+
+  /user-agent:
+    get:
+      operationId: httpbin_user_agent
+      summary: Returns user-agent
+      description: Returns the request's User-Agent header
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user-agent:
+                    type: string
+
+  /status/{code}:
+    get:
+      operationId: httpbin_status
+      summary: Returns given status code
+      description: Returns a response with the specified HTTP status code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: HTTP status code to return
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successful response
+
+  /delay/{seconds}:
+    get:
+      operationId: httpbin_delay
+      summary: Delays response
+      description: Returns a delayed response (max 10 seconds)
+      parameters:
+        - name: seconds
+          in: path
+          required: true
+          description: Number of seconds to delay (0-10)
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10
+      responses:
+        "200":
+          description: Delayed response
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /uuid:
+    get:
+      operationId: httpbin_uuid
+      summary: Returns a UUID4
+      description: Returns a randomly generated UUID4
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uuid:
+                    type: string
+
+  /anything:
+    get:
+      operationId: httpbin_anything_get
+      summary: Returns anything passed in request (GET)
+      description: Returns request data for GET method
+      parameters:
+        - name: test
+          in: query
+          description: Test query parameter
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      operationId: httpbin_anything_post
+      summary: Returns anything passed in request (POST)
+      description: Returns request data for POST method
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /json:
+    get:
+      operationId: httpbin_json
+      summary: Returns a simple JSON document
+      description: Returns a sample JSON response
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object

@@ -1,0 +1,124 @@
+openapi: "3.0.3"
+info:
+  title: Dog CEO Dog API
+  description: |
+    Example spec for the Dog CEO "Dog API" (public, no-auth).
+    Docs: https://dog.ceo/dog-api/
+  version: "1.0.0"
+
+servers:
+  - url: https://dog.ceo/api
+
+paths:
+  /breeds/list/all:
+    get:
+      operationId: listAllBreeds
+      summary: List all dog breeds
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreedsListResponse"
+
+  /breeds/image/random:
+    get:
+      operationId: getRandomImage
+      summary: Get a random dog image
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SingleImageResponse"
+
+  /breed/{breed}/images/random:
+    get:
+      operationId: getRandomImageByBreed
+      summary: Get a random image for a specific breed
+      parameters:
+        - name: breed
+          in: path
+          required: true
+          description: Breed name (e.g. "hound")
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SingleImageResponse"
+
+  /breed/{breed}/list:
+    get:
+      operationId: listSubBreeds
+      summary: List sub-breeds for a breed
+      parameters:
+        - name: breed
+          in: path
+          required: true
+          description: Breed name (e.g. "hound")
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubBreedsResponse"
+
+components:
+  schemas:
+    Status:
+      type: string
+      example: success
+
+    SingleImageResponse:
+      type: object
+      required: [message, status]
+      properties:
+        message:
+          type: string
+          description: Image URL
+          example: https://images.dog.ceo/breeds/hound-afghan/n02088094_1003.jpg
+        status:
+          $ref: "#/components/schemas/Status"
+
+    SubBreedsResponse:
+      type: object
+      required: [message, status]
+      properties:
+        message:
+          type: array
+          items:
+            type: string
+          example:
+            [
+              "afghan",
+              "basset",
+              "blood",
+              "english",
+              "ibizan",
+              "plott",
+              "walker",
+            ]
+        status:
+          $ref: "#/components/schemas/Status"
+
+    BreedsListResponse:
+      type: object
+      required: [message, status]
+      properties:
+        message:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        status:
+          $ref: "#/components/schemas/Status"
