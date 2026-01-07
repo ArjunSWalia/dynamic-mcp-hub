@@ -5,7 +5,7 @@ Interactive terminal chat that connects OpenAI's Responses API to your MCP Hub.
 ## Prerequisites
 
 - MCP Hub running on localhost:8000
-- At least one spec enabled (httpbin, dog, etc.)
+- At least one spec enabled (httpbin, dog, dailymed, etc.)
 - ngrok account (free tier works)
 - OpenAI API key
 
@@ -77,4 +77,21 @@ Assistant: Called httpbin_get. Response: {"args": {"foo": "hello", "bar": "world
 You: Get a random dog image
 
 Assistant: Here is a random dog image: https://images.dog.ceo/breeds/...
+```
+
+## DailyMed Example
+
+```
+You: Search for aspirin drug labels
+
+Assistant: I found 25 SPL documents for aspirin. Here are the top results:
+1. ASPIRIN tablet (setid: abc123...)
+2. ASPIRIN DELAYED RELEASE tablet (setid: def456...)
+
+You: Get details for the first one
+
+Assistant: Here are the details for ASPIRIN tablet:
+- Labeler: Example Pharma
+- Published: 2024-02-15
+- Active Ingredient: Aspirin 325mg
 ```

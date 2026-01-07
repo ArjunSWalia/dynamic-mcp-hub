@@ -1,0 +1,339 @@
+openapi: 3.0.3
+info:
+  title: DailyMed API
+  description: |
+    Access drug labeling information from the National Library of Medicine's DailyMed database.
+    DailyMed provides high-quality drug labeling information (SPL - Structured Product Labeling)
+    submitted to the FDA.
+  version: "2.0"
+  contact:
+    name: DailyMed Support
+    url: https://dailymed.nlm.nih.gov/dailymed/contact.cfm
+
+servers:
+  - url: https://dailymed.nlm.nih.gov/dailymed/services/v2
+    description: DailyMed REST API v2
+
+paths:
+  /spls.json:
+    get:
+      operationId: dailymed_listSpls
+      summary: Search drug labeling (SPL) documents
+      description: |
+        Search for Structured Product Labeling (SPL) documents by drug name, NDC, RxCUI, or setid.
+        Returns a paginated list of SPL metadata including titles, setids, and publication dates.
+      parameters:
+        - name: drug_name
+          in: query
+          description: Drug name to search for (partial match supported)
+          schema:
+            type: string
+          example: "aspirin"
+        - name: name_type
+          in: query
+          description: Type of drug name to search
+          schema:
+            type: string
+            enum: [brand, generic, both]
+            default: both
+        - name: ndc
+          in: query
+          description: National Drug Code (NDC) to search for
+          schema:
+            type: string
+          example: "0049-4900-30"
+        - name: rxcui
+          in: query
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+          example: "1191"
+        - name: setid
+          in: query
+          description: SPL Set ID (UUID) to search for
+          schema:
+            type: string
+            format: uuid
+        - name: boxed_warning
+          in: query
+          description: Filter by presence of boxed warning
+          schema:
+            type: boolean
+        - name: published_date
+          in: query
+          description: Filter by publication date (YYYY-MM-DD format)
+          schema:
+            type: string
+            format: date
+        - name: published_date_comparison
+          in: query
+          description: Comparison operator for published_date filter
+          schema:
+            type: string
+            enum: [eq, gt, gte, lt, lte]
+            default: eq
+        - name: pagesize
+          in: query
+          description: Number of results per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Successful response with list of SPL documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  metadata:
+                    type: object
+
+  /spls/{setid}.xml:
+    get:
+      operationId: dailymed_getSplBySetId
+      summary: Get SPL document (XML) by Set ID
+      description: |
+        Retrieve the SPL XML document for a specific Set ID.
+        Note: DailyMed provides XML for this endpoint.
+      parameters:
+        - name: setid
+          in: path
+          required: true
+          description: The unique Set ID (UUID) of the SPL document
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response with SPL XML document
+          content:
+            application/xml:
+              schema:
+                type: string
+        "404":
+          description: SPL document not found
+
+  /spls/{setid}/history.json:
+    get:
+      operationId: dailymed_getSplHistory
+      summary: Get version history of an SPL document
+      description: |
+        Retrieve the version history for a specific SPL document.
+        Shows all published versions with their effective dates.
+      parameters:
+        - name: setid
+          in: path
+          required: true
+          description: The unique Set ID (UUID) of the SPL document
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response with SPL version history
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: SPL document not found
+
+  /spls/{setid}/media.json:
+    get:
+      operationId: dailymed_getSplMedia
+      summary: Get media files associated with an SPL document
+      description: |
+        Retrieve information about media files (images, PDFs) associated with an SPL document.
+        Includes URLs to download the media files.
+      parameters:
+        - name: setid
+          in: path
+          required: true
+          description: The unique Set ID (UUID) of the SPL document
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response with media file information
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: SPL document not found
+
+  /spls/{setid}/ndcs.json:
+    get:
+      operationId: dailymed_getSplNdcs
+      summary: Get NDCs associated with an SPL document
+      description: |
+        Retrieve all National Drug Codes (NDCs) associated with a specific SPL document.
+        Each NDC represents a unique product/package combination.
+      parameters:
+        - name: setid
+          in: path
+          required: true
+          description: The unique Set ID (UUID) of the SPL document
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response with associated NDCs
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: SPL document not found
+
+  /spls/{setid}/packaging.json:
+    get:
+      operationId: dailymed_getSplPackaging
+      summary: Get packaging information for an SPL document
+      description: |
+        Retrieve detailed packaging information for a specific SPL document.
+        Includes package descriptions, quantities, and associated NDCs.
+      parameters:
+        - name: setid
+          in: path
+          required: true
+          description: The unique Set ID (UUID) of the SPL document
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful response with packaging information
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: SPL document not found
+
+  /drugnames.json:
+    get:
+      operationId: dailymed_listDrugNames
+      summary: Search for drug names
+      description: |
+        Search the DailyMed database for drug names. Returns a list of matching
+        drug names with their types (brand/generic) and associated manufacturers.
+      parameters:
+        - name: drug_name
+          in: query
+          description: Drug name to search for (partial match supported)
+          schema:
+            type: string
+          example: "ibuprofen"
+        - name: name_type
+          in: query
+          description: Type of drug name to search
+          schema:
+            type: string
+            enum: [brand, generic, both]
+            default: both
+        - name: manufacturer
+          in: query
+          description: Filter by manufacturer/labeler name
+          schema:
+            type: string
+        - name: pagesize
+          in: query
+          description: Number of results per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Successful response with list of drug names
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /ndcs.json:
+    get:
+      operationId: dailymed_listNdcs
+      summary: List National Drug Codes (NDCs)
+      description: |
+        Retrieve a paginated list of National Drug Codes from the DailyMed database.
+        NDCs uniquely identify drug products in the United States.
+      parameters:
+        - name: pagesize
+          in: query
+          description: Number of results per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Successful response with list of NDCs
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxcuis.json:
+    get:
+      operationId: dailymed_listRxcuis
+      summary: List RxNorm Concept Unique Identifiers (RxCUIs)
+      description: |
+        Retrieve a paginated list of RxNorm Concept Unique Identifiers from DailyMed.
+        RxCUIs provide normalized drug identifiers for interoperability.
+      parameters:
+        - name: pagesize
+          in: query
+          description: Number of results per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Successful response with list of RxCUIs
+          content:
+            application/json:
+              schema:
+                type: object

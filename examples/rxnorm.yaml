@@ -1,0 +1,574 @@
+openapi: 3.0.3
+info:
+  title: RxNorm API
+  description: |
+    Access the NLM RxNorm database for normalized drug names and identifiers.
+    RxNorm provides standardized names for clinical drugs and links to many
+    drug vocabularies (NDC, SNOMED CT, etc.).
+
+    Key concepts:
+    - **RxCUI**: RxNorm Concept Unique Identifier - the primary drug identifier
+    - **TTY**: Term Type (e.g., SBD=Branded Drug, SCD=Clinical Drug, IN=Ingredient)
+    - **RELA**: Relationship attribute between concepts
+  version: "1.0"
+  contact:
+    name: NLM RxNav
+    url: https://lhncbc.nlm.nih.gov/RxNav/APIs/RxNormAPIs.html
+
+servers:
+  - url: https://rxnav.nlm.nih.gov/REST
+    description: RxNorm REST API
+
+paths:
+  /rxcui.json:
+    get:
+      operationId: rxnorm_findRxcui
+      summary: Find RxCUI by drug name or external identifier
+      description: |
+        Find the RxNorm Concept Unique Identifier (RxCUI) for a drug.
+
+        Two modes of operation:
+        1. **By name**: Set `name` parameter to search by drug name string
+        2. **By ID**: Set `idtype` and `id` to look up by external identifier
+
+        Use either `name` OR (`idtype` + `id`), not both.
+      parameters:
+        - name: name
+          in: query
+          description: Drug name string to search (use this OR idtype+id)
+          schema:
+            type: string
+          example: "lipitor"
+        - name: idtype
+          in: query
+          description: |
+            Type of external identifier (use with `id` param). Values:
+            - NDC: National Drug Code
+            - SNOMEDCT: SNOMED CT identifier
+            - VANDF: VA National Drug File
+            - etc.
+          schema:
+            type: string
+            enum: [NDC, SNOMEDCT, VANDF, MMSL, MTHSPL, GCN_SEQNO, DRUGBANK, MESH, UMLSCUI, VUID]
+        - name: id
+          in: query
+          description: External identifier value (use with `idtype` param)
+          schema:
+            type: string
+        - name: allsrc
+          in: query
+          description: Include all sources (0=RxNorm only, 1=all sources)
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+        - name: srclist
+          in: query
+          description: Comma-separated list of source vocabularies to search
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search type (0=exact, 1=normalized, 2=approximate)
+          schema:
+            type: integer
+            enum: [0, 1, 2]
+            default: 0
+      responses:
+        "200":
+          description: RxCUI lookup results
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxcui/{rxcui}.json:
+    get:
+      operationId: rxnorm_getRxcuiStatus
+      summary: Get status of an RxCUI
+      description: Check if an RxCUI is active, retired, or remapped
+      parameters:
+        - name: rxcui
+          in: path
+          required: true
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+          example: "198440"
+      responses:
+        "200":
+          description: RxCUI status information
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxcui/{rxcui}/properties.json:
+    get:
+      operationId: rxnorm_getRxConceptProperties
+      summary: Get properties of an RxNorm concept
+      description: |
+        Retrieve full concept properties including name, TTY (term type),
+        language, and suppression status.
+      parameters:
+        - name: rxcui
+          in: path
+          required: true
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+          example: "198440"
+      responses:
+        "200":
+          description: Concept properties
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxcui/{rxcui}/allProperties.json:
+    get:
+      operationId: rxnorm_getAllProperties
+      summary: Get all properties of an RxNorm concept
+      description: Retrieve all properties including attributes from all sources
+      parameters:
+        - name: rxcui
+          in: path
+          required: true
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+        - name: prop
+          in: query
+          description: |
+            Property categories to include (comma-separated):
+            ATTRIBUTES, CODES, NAMES, SOURCES, ALL
+          schema:
+            type: string
+            default: "ALL"
+      responses:
+        "200":
+          description: All concept properties
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxcui/{rxcui}/related.json:
+    get:
+      operationId: rxnorm_getRelatedByType
+      summary: Get related concepts by relationship or term type
+      description: |
+        Find concepts related to the given RxCUI.
+
+        Two modes:
+        1. **By TTY**: Set `tty` to find related concepts of specific term types
+        2. **By RELA**: Set `rela` to find concepts with specific relationships
+
+        Common TTY values: IN (Ingredient), SCD (Clinical Drug), SBD (Branded Drug),
+        SCDC (Clinical Drug Component), SBDC (Branded Drug Component)
+
+        Common RELA values: has_ingredient, tradename_of, consists_of
+      parameters:
+        - name: rxcui
+          in: path
+          required: true
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+        - name: tty
+          in: query
+          description: Term types to include (comma-separated, e.g., "IN,SCD,SBD")
+          schema:
+            type: string
+          example: "IN,SCD"
+        - name: rela
+          in: query
+          description: Relationship attributes to follow (comma-separated)
+          schema:
+            type: string
+          example: "has_ingredient"
+      responses:
+        "200":
+          description: Related concepts
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxcui/{rxcui}/allrelated.json:
+    get:
+      operationId: rxnorm_getAllRelatedInfo
+      summary: Get all related concepts for an RxCUI
+      description: |
+        Retrieve all related concepts grouped by term type (TTY).
+        Returns ingredients, clinical drugs, branded drugs, etc.
+      parameters:
+        - name: rxcui
+          in: path
+          required: true
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+      responses:
+        "200":
+          description: All related concepts grouped by TTY
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxcui/{rxcui}/ndcs.json:
+    get:
+      operationId: rxnorm_getNdcs
+      summary: Get NDCs associated with an RxCUI
+      description: Retrieve all National Drug Codes (NDCs) linked to this RxCUI
+      parameters:
+        - name: rxcui
+          in: path
+          required: true
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+        - name: history
+          in: query
+          description: Include historical NDCs (0=current only, 1=include historical)
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+      responses:
+        "200":
+          description: Associated NDCs
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxcui/{rxcui}/proprietary.json:
+    get:
+      operationId: rxnorm_getProprietaryInfo
+      summary: Get proprietary information for an RxCUI
+      description: Retrieve source-specific proprietary attributes
+      parameters:
+        - name: rxcui
+          in: path
+          required: true
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+        - name: srclist
+          in: query
+          description: Comma-separated list of sources to include
+          schema:
+            type: string
+        - name: prop
+          in: query
+          description: Specific properties to retrieve
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Proprietary information
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /drugs.json:
+    get:
+      operationId: rxnorm_getDrugs
+      summary: Get drugs matching a name
+      description: |
+        Search for drugs by name and return all related drug concepts
+        organized by term type.
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: Drug name to search
+          schema:
+            type: string
+          example: "lipitor"
+      responses:
+        "200":
+          description: Matching drug concepts
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /allconcepts.json:
+    get:
+      operationId: rxnorm_getAllConcepts
+      summary: Get all concepts of specified term types
+      description: Retrieve all RxNorm concepts matching the given term types
+      parameters:
+        - name: tty
+          in: query
+          required: true
+          description: Term types to retrieve (comma-separated)
+          schema:
+            type: string
+          example: "IN"
+      responses:
+        "200":
+          description: All matching concepts
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /approximateTerm.json:
+    get:
+      operationId: rxnorm_getApproximateMatch
+      summary: Approximate string matching for drug names
+      description: |
+        Find RxNorm concepts that approximately match a search term.
+        Useful for handling misspellings or partial drug names.
+      parameters:
+        - name: term
+          in: query
+          required: true
+          description: Search term (can be misspelled or partial)
+          schema:
+            type: string
+          example: "zocor 10 mg"
+        - name: maxEntries
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            default: 20
+        - name: option
+          in: query
+          description: Match option (0=best match, 1=all matches)
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+      responses:
+        "200":
+          description: Approximate matches
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /displaynames.json:
+    get:
+      operationId: rxnorm_getDisplayTerms
+      summary: Get all display names
+      description: Retrieve all RxNorm display names for auto-complete functionality
+      responses:
+        "200":
+          description: All display names
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /spellingsuggestions.json:
+    get:
+      operationId: rxnorm_getSpellingSuggestions
+      summary: Get spelling suggestions for a drug name
+      description: Returns spelling suggestions for potentially misspelled drug names
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: Potentially misspelled drug name
+          schema:
+            type: string
+          example: "asprin"
+      responses:
+        "200":
+          description: Spelling suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /idtypes.json:
+    get:
+      operationId: rxnorm_getIdTypes
+      summary: Get supported identifier types
+      description: List all external identifier types supported by RxNorm
+      responses:
+        "200":
+          description: Supported ID types
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /sourcetypes.json:
+    get:
+      operationId: rxnorm_getSourceTypes
+      summary: Get supported source vocabularies
+      description: List all source vocabularies available in RxNorm
+      responses:
+        "200":
+          description: Source vocabulary types
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /relatypes.json:
+    get:
+      operationId: rxnorm_getRelaTypes
+      summary: Get relationship types
+      description: List all relationship attribute (RELA) types in RxNorm
+      responses:
+        "200":
+          description: Relationship types
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /termtypes.json:
+    get:
+      operationId: rxnorm_getTermTypes
+      summary: Get term types (TTY)
+      description: List all term types available in RxNorm
+      responses:
+        "200":
+          description: Term types
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /version.json:
+    get:
+      operationId: rxnorm_getVersion
+      summary: Get RxNorm database version
+      description: Returns the current RxNorm database version and release date
+      responses:
+        "200":
+          description: Version information
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxclass/class/byDrugName.json:
+    get:
+      operationId: rxnorm_getClassByDrugName
+      summary: Get drug classes for a drug name
+      description: Find drug classification information (ATC, VA, etc.) by drug name
+      parameters:
+        - name: drugName
+          in: query
+          required: true
+          description: Drug name to look up
+          schema:
+            type: string
+          example: "lipitor"
+        - name: relaSource
+          in: query
+          description: Classification source (ATC, VA, MEDRT, etc.)
+          schema:
+            type: string
+          example: "ATC"
+        - name: relas
+          in: query
+          description: Relationship types to include
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Drug class information
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /rxclass/class/byRxcui.json:
+    get:
+      operationId: rxnorm_getClassByRxcui
+      summary: Get drug classes for an RxCUI
+      description: Find drug classification by RxCUI
+      parameters:
+        - name: rxcui
+          in: query
+          required: true
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+          example: "198440"
+        - name: relaSource
+          in: query
+          description: Classification source (ATC, VA, MEDRT, etc.)
+          schema:
+            type: string
+        - name: relas
+          in: query
+          description: Relationship types to include
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Drug class information
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /interaction/interaction.json:
+    get:
+      operationId: rxnorm_getInteraction
+      summary: Get drug interactions for an RxCUI
+      description: |
+        Retrieve known drug-drug interactions for a given RxCUI.
+        Uses multiple interaction data sources.
+      parameters:
+        - name: rxcui
+          in: query
+          required: true
+          description: RxNorm Concept Unique Identifier
+          schema:
+            type: string
+          example: "198440"
+        - name: sources
+          in: query
+          description: Interaction sources (comma-separated, e.g., "DrugBank,ONCHigh")
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Drug interaction information
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /interaction/list.json:
+    get:
+      operationId: rxnorm_getInteractionList
+      summary: Get interactions between multiple drugs
+      description: |
+        Check for drug-drug interactions between a list of RxCUIs.
+        Useful for medication reconciliation.
+      parameters:
+        - name: rxcuis
+          in: query
+          required: true
+          description: Comma-separated list of RxCUIs to check
+          schema:
+            type: string
+          example: "198440,153165"
+        - name: sources
+          in: query
+          description: Interaction sources to query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Interaction check results
+          content:
+            application/json:
+              schema:
+                type: object

@@ -1,0 +1,104 @@
+openapi: 3.0.3
+info:
+  title: openFDA Drug Product Labeling API
+  description: |
+    Query FDA drug product labeling data including prescribing information,
+    warnings, indications, dosage, and more. Uses openFDA query syntax.
+
+    Query Syntax Examples:
+    - Simple field search: `openfda.brand_name:advil`
+    - Exact match: `openfda.brand_name.exact:"ADVIL"`
+    - Drug interactions: `drug_interactions:caffeine`
+    - Multiple terms: `openfda.brand_name:advil+AND+warnings:liver`
+    - SPL Set ID: `openfda.spl_set_id:"abc123-def456"`
+
+    See https://open.fda.gov/apis/query-syntax/ for full query syntax.
+  version: "2"
+  contact:
+    name: openFDA
+    url: https://open.fda.gov/apis/drug/label/
+
+servers:
+  - url: https://api.fda.gov
+    description: openFDA Production API
+
+paths:
+  /drug/label.json:
+    get:
+      operationId: openfda_drug_label_query
+      summary: Search FDA drug product labeling
+      description: |
+        Query FDA drug labeling data using openFDA search syntax.
+        Returns structured product labeling (SPL) data including:
+        - Prescribing information
+        - Warnings and precautions
+        - Drug interactions
+        - Indications and usage
+        - Dosage and administration
+        - Adverse reactions
+
+        Use the `search` parameter with openFDA query syntax to filter results.
+        Use `count` to get field value counts instead of records.
+      parameters:
+        - name: search
+          in: query
+          description: |
+            openFDA search query. Examples:
+            - `openfda.brand_name:advil` - Search by brand name
+            - `openfda.generic_name:ibuprofen` - Search by generic name
+            - `openfda.manufacturer_name:pfizer` - Search by manufacturer
+            - `drug_interactions:warfarin` - Search drug interactions
+            - `warnings:pregnancy` - Search warnings text
+            - `openfda.spl_set_id:"UUID"` - Search by SPL Set ID
+            - `openfda.rxcui:198440` - Search by RxNorm CUI
+          schema:
+            type: string
+          example: "openfda.brand_name:advil"
+        - name: limit
+          in: query
+          description: Maximum number of results to return (1-1000)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 10
+        - name: skip
+          in: query
+          description: Number of results to skip (for pagination)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: count
+          in: query
+          description: |
+            Field to count values for (returns counts instead of records).
+            Example: `openfda.manufacturer_name.exact` returns manufacturer counts.
+          schema:
+            type: string
+          example: "openfda.route.exact"
+        - name: api_key
+          in: query
+          description: Optional API key for higher rate limits
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response with drug label data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    type: object
+                    description: Response metadata including disclaimer and pagination
+                  results:
+                    type: array
+                    description: Array of drug label records (or counts if using count param)
+                    items:
+                      type: object
+        "400":
+          description: Bad request - invalid query syntax
+        "404":
+          description: No results found for query
